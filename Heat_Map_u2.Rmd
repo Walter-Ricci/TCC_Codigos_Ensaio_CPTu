@@ -1,0 +1,291 @@
+
+
+```{r}
+# The easiest way to get ggplot2 is to install the whole tidyverse:
+#install.packages("tidyverse")
+
+# Alternatively, install just ggplot2:
+#install.packages("ggplot2")
+
+library(zoo)
+library(ggplot2)
+library(reshape2)
+library(readxl)
+library(RColorBrewer)
+library(dplyr)
+
+setwd("C:/Banco_de_Dados")
+dados <- read_xlsx("TRATAMENTO_CPTU_TODOS.xlsx",sheet = "DADOS DE ENTRADA - CPTU",range = "B43:CH13022")
+
+
+```
+
+```{r}
+dados_SCPTu_P4 <- dados %>% filter(FURO == "SCPTu-P4")
+
+sumario_dados_profundidade <- summary(dados_SCPTu_P4$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_SCPTu_P4$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_SCPTu_P4$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_SCPTu_P4 <- dados_SCPTu_P4 %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_P4$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_P4$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_SCPTu_P4, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, 0)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_SCPTU_P4.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+
+```{r}
+dados_CPTu_02 <- dados %>% filter(FURO == "CPTu-02")
+
+sumario_dados_profundidade <- summary(dados_CPTu_02$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_CPTu_02$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_CPTu_02$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_CPTu_02 <- dados_CPTu_02 %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_CPTu_02$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_CPTu_02$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_CPTu_02, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, 0)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(title = "CPTu-02",
+       x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_CPTu_02.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+
+```{r}
+dados_CPTu_02a <- dados %>% filter(FURO == "CPTu-02a")
+
+sumario_dados_profundidade <- summary(dados_CPTu_02a$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_CPTu_02a$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_CPTu_02a$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_CPTu_02a <- dados_CPTu_02a %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_CPTu_02a$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_CPTu_02a$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_CPTu_02a, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, 0)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(title = "CPTu-02a",
+       x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_CPTu_02a.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+
+```{r}
+dados_SCPTu_01 <- dados %>% filter(FURO == "SCPTu-01")
+
+sumario_dados_profundidade <- summary(dados_SCPTu_01$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_SCPTu_01$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_SCPTu_01$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_SCPTu_01 <- dados_SCPTu_01 %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_01$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_01$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_SCPTu_01, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, Min_profundidade)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(title = "SCPTu-01",
+       x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_SCPTu_01.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+
+```{r}
+dados_SCPTu_02 <- dados %>% filter(FURO == "SCPTu-02")
+
+sumario_dados_profundidade <- summary(dados_SCPTu_02$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_SCPTu_02$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_SCPTu_02$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_SCPTu_02 <- dados_SCPTu_02 %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_02$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_02$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_SCPTu_02, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, Min_profundidade)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(title = "SCPTu-02",
+       x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_SCPTu_02.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+
+```{r}
+dados_SCPTu_14 <- dados %>% filter(FURO == "SCPTu-14")
+
+sumario_dados_profundidade <- summary(dados_SCPTu_14$`PROF. (m)`)
+sumario_dados_poropressao_neutra <- summary(dados_SCPTu_14$`u2 (kPa)`)
+IQR_u2 <- IQR(dados_SCPTu_14$`u2 (kPa)`)
+
+Lower_resistencia <- sumario_dados_poropressao_neutra[2] - 1.5 * IQR_u2
+Upper_resistencia <- sumario_dados_poropressao_neutra[5] + 1.5 * IQR_u2
+Min_profundidade <- sumario_dados_profundidade[1]
+Max_profundidade <- sumario_dados_profundidade[6]
+
+# Filtra os valores outliers
+Poropressao_neutra_filtrada_SCPTu_14 <- dados_SCPTu_14 %>% 
+  filter(`u2 (kPa)` >= Lower_resistencia & `u2 (kPa)` <= Upper_resistencia)
+
+sumario_dados_profundidade_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_14$`PROF. (m)`)
+sumario_dados_poropressao_neutra_filtrado <- summary(Poropressao_neutra_filtrada_SCPTu_14$`u2 (kPa)`)
+
+Min_poropressao <- sumario_dados_poropressao_neutra_filtrado[1]
+Max_poropressao <- sumario_dados_poropressao_neutra_filtrado[6]
+Min_profundidade <- sumario_dados_profundidade_filtrado[1]
+Max_profundidade <- sumario_dados_profundidade_filtrado[6]
+```
+
+```{r}
+ggplot(data = Poropressao_neutra_filtrada_SCPTu_14, aes(x = `u2 (kPa)`, y = `PROF. (m)`)) +
+  stat_density_2d(aes(fill = after_stat(density)), geom = "raster", contour = FALSE, interpolate = TRUE, alpha = 0.8) +
+  scale_fill_gradientn(colours = c("#034e7b", "#1c86c6", "#a6bddb", "#fdae61", "#d7191c"), name = "Densidade", guide = "none") +
+  scale_x_continuous(expand = c(0, 0)) +
+  scale_y_reverse(expand = c(0, 0)) +
+  coord_cartesian(xlim = c(Min_poropressao,Max_poropressao), ylim = c(Max_profundidade, Min_profundidade)) +
+  theme(legend.position = "right",
+        plot.title = element_text(hjust = 0.5, margin = margin(b = 10)),
+        axis.title.x = element_text(margin = margin(t = 10)),
+        axis.title.y = element_text(margin = margin(r = 10)),
+        plot.margin = margin(t = 30, r = 30, b = 30, l = 30)) +
+  labs(title = "SCPTu-14",
+       x = "u2 (kPa)",
+       y = "Profundidade (m)") +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 1), se = FALSE, color = "#3D2B1F", linewidth = 1, linetype = "solid", alpha = 0.5)
+
+ggsave(filename = "imagens/heatmap_u2_filtrado_SCPTu_14.png", plot = last_plot(), width = 8, height = 6, units = "in")
+```
+

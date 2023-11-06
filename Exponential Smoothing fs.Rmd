@@ -1,0 +1,414 @@
+
+
+```{r}
+
+# Carregar pacotes e dados
+library(zoo)
+library(ggplot2)
+library(reshape2)
+library(readxl)
+library(RColorBrewer)
+library(dplyr)
+library(forecast)
+library(gridExtra)
+library(ggpubr)
+library(grid)
+
+setwd("C:/Banco_de_Dados")
+dados <- read_xlsx("TRATAMENTO_CPTU_TODOS.xlsx",sheet = "DADOS DE ENTRADA - CPTU",range = "B43:CH13022")
+
+```
+
+
+```{r}
+dados_SCPTU_P4 <- dados %>% filter(FURO == "SCPTu-P4")
+
+dados_profundidade_fs <- dados_SCPTU_P4[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.01)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+plot_fs_sobreposto <-ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto
+
+ggsave(filename = "imagens/plot_fs_sobreposto_SCPTu-P4.png", plot = plot_fs_sobreposto)
+
+```
+
+```{r}
+
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(0, 420) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(0, 420) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Comparação da Resistência a fricção Original e Suavizada", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Organize os gráficos em um único painel
+combined_plot_fs_SCPTu_P4 <- plot_grid(plot_fs, plot_es_fs, labels = c("Resistência Original", "Resistência Suavizada"), nrow = 1)
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_SCPTu_P4.png", plot = combined_plot_fs_SCPTu_P4)
+
+
+```
+
+```{r}
+dados_CPTu_02 <- dados %>% filter(FURO == "CPTu-02")
+
+dados_profundidade_fs <- dados_CPTu_02[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.01)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+plot_fs_sobreposto <-ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  ggtitle("CPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto
+
+ggsave(filename = "imagens/plot_fs_sobreposto_CPTu-02.png", plot = plot_fs_sobreposto)
+```
+
+```{r}
+
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(0, 30) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(0, 30) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_fs_CPTu_02 <- grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Resistência a Fricção Original e Suavizada do CPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_CPTu-02.png", plot = combined_plot_fs_CPTu_02)
+
+```
+```{r}
+dados_CPTu_02a <- dados %>% filter(FURO == "CPTu-02a")
+
+dados_profundidade_fs <- dados_CPTu_02a[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.01)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+plot_fs_sobreposto <-ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  ggtitle("CPTu-02a") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto
+
+ggsave(filename = "imagens/plot_fs_sobreposto_CPTu-02a.png", plot = plot_fs_sobreposto)
+
+
+```
+
+```{r}
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(0, 50) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(0, 50) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_fs_CPTu_02a <- grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Resistência a Fricção Original e Suavizada do CPTu-02a", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_CPTu-02a.png", plot = combined_plot_fs_CPTu_02a)
+
+```
+
+```{r}
+dados_SCPTu_01 <- dados %>% filter(FURO == "SCPTu-01")
+
+dados_profundidade_fs <- dados_SCPTu_01[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.04)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+plot_fs_sobreposto <-ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  ggtitle("SCPTu-01") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto
+
+ggsave(filename = "imagens/plot_fs_sobreposto_SCPTu-01.png", plot = plot_fs_sobreposto)
+
+```
+```{r}
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 60) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 60) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_fs_SCPTu_01 <- grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Resistência a Fricção Original e Suavizada do SCPTu-01", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_SCPTu_01.png", plot = combined_plot_fs_SCPTu_01)
+```
+
+```{r}
+dados_SCPTu_02 <- dados %>% filter(FURO == "SCPTu-02")
+
+dados_profundidade_fs <- dados_SCPTu_02[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.1)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+plot_fs_sobreposto <-ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  ggtitle("SCPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto
+
+ggsave(filename = "imagens/plot_fs_sobreposto_SCPTu_02.png", plot = plot_fs_sobreposto)
+```
+```{r}
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 70) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 70) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_fs_SCPTu_02 <- grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Resistência a Fricção Original e Suavizada do SCPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_SCPTu_02.png", plot = combined_plot_fs_SCPTu_02)
+```
+```{r}
+dados_SCPTu_14 <- dados %>% filter(FURO == "SCPTu-14")
+
+dados_profundidade_fs <- dados_SCPTu_14[c("PROF. (m)", "fs (kPa)")]
+
+ts_fs <- ts(dados_profundidade_fs$"fs (kPa)", start = c(1,1), frequency = 1)
+
+ts_fs_es <- ets(ts_fs, alpha = 0.08)
+
+dados_profundidade_fs$es_fs <- ts_fs_es$fitted
+
+# Calcular o primeiro e terceiro quartis
+Q1 <- quantile(dados_profundidade_fs$`fs (kPa)`, 0.25)
+Q3 <- quantile(dados_profundidade_fs$`fs (kPa)`, 0.75)
+
+# Calcular o IQR (Intervalo Interquartil)
+IQR <- Q3 - Q1
+
+# Calcular os limites inferior e superior para identificar outliers
+limite_inferior <- Q1 - 1.5 * IQR
+limite_superior <- Q3 + 1.5 * IQR
+
+# Filtrar os dados para remover outliers
+dados_profundidade_fs_sem_outliers <- dados_profundidade_fs %>%
+  filter(`fs (kPa)` >= limite_inferior, `fs (kPa)` <= limite_superior)
+
+# Criar um novo objeto ts com os dados sem outliers
+ts_fs_sem_outliers <- ts(dados_profundidade_fs_sem_outliers$`fs (kPa)`, start = c(1, 1), frequency = 1)
+
+# Aplicar Exponential Smoothing aos dados sem outliers
+ts_fs_sem_outliers_es <- ets(ts_fs_sem_outliers, alpha = 0.08)
+
+# Atualizar os valores suavizados nos dados originais
+dados_profundidade_fs_sem_outliers$es_fs <- ts_fs_sem_outliers_es$fitted
+
+# Plotar os dados sem outliers
+plot_fs_sobreposto_sem_outliers <- ggplot(data = dados_profundidade_fs_sem_outliers, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_fs), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  ggtitle("SCPTu-14") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+plot_fs_sobreposto_sem_outliers
+
+# Salvar o gráfico sem outliers na pasta "imagens"
+ggsave(filename = "imagens/plot_fs_sobreposto_sem_outliers_SCPTu_14.png", plot = plot_fs_sobreposto_sem_outliers)
+
+
+```
+```{r}
+# Gráfico da resistência original
+plot_fs <- ggplot(data = dados_profundidade_fs_sem_outliers, aes(x = `PROF. (m)`, y = `fs (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(10, 35) +
+  ylim(0, 0.1) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+  
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_fs <- ggplot(data = dados_profundidade_fs_sem_outliers, aes(x = `PROF. (m)`, y = es_fs)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(10, 35) +
+  ylim(0, 0.1) +
+  scale_x_reverse() +
+  labs(x = "", y = "fs (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 6, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_fs_SCPTu_14 <- grid.arrange(plot_fs, plot_es_fs, nrow = 1, top = textGrob("Resistência a Fricção Original e Suavizada do SCPTu-14", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_fs_SCPTu_14.png", plot = combined_plot_fs_SCPTu_14)
+```
+
+
+
+

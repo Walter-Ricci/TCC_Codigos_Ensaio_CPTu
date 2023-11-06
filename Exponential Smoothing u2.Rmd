@@ -1,0 +1,392 @@
+
+
+```{r}
+# Carregar pacotes e dados
+library(zoo)
+library(ggplot2)
+library(reshape2)
+library(readxl)
+library(RColorBrewer)
+library(dplyr)
+library(forecast)
+library(gridExtra)
+library(ggpubr)
+library(grid)
+
+setwd("C:/Banco_de_Dados")
+dados <- read_xlsx("TRATAMENTO_CPTU_TODOS.xlsx",sheet = "DADOS DE ENTRADA - CPTU",range = "B43:CH13022")
+
+```
+
+```{r}
+dados_SCPTU_P4 <- dados %>% filter(FURO == "SCPTu-P4")
+
+dados_profundidade_u2 <- dados_SCPTU_P4[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.004)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_SCPTU_P4.png", plot = plot_u2_sobreposto)
+```
+
+```{r}
+
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(-70, 1070) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(-70, 1070) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Comparação da Poropressão Original e Suavizada", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Organize os gráficos em um único painel
+combined_plot_u2_SCPTu_P4 <- plot_grid(plot_u2, plot_es_u2, labels = c("Poropressão Original", "Poropressão Suavizada"), nrow = 1)
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_SCPTu_P4.png", plot = combined_plot_u2_SCPTu_P4)
+
+```
+```{r}
+dados_CPTu_02 <- dados %>% filter(FURO == "CPTu-02")
+
+dados_profundidade_u2 <- dados_CPTu_02[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.008)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  ggtitle("CPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_CPTu_02.png", plot = plot_u2_sobreposto)
+```
+```{r}
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(-70, 300) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(-70, 300) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_u2_CPTu_02 <- grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Poropressão Original e Suavizada do CPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_CPTu_02.png", plot = combined_plot_u2_CPTu_02)
+```
+```{r}
+dados_CPTu_02a <- dados %>% filter(FURO == "CPTu-02a")
+
+dados_profundidade_u2 <- dados_CPTu_02a[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.008)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  ggtitle("CPTu-02a") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_CPTu_02a.png", plot = plot_u2_sobreposto)
+
+
+```
+```{r}
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(-70, 600) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(-70, 600) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_u2_CPTu_02a <- grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Poropressão Original e Suavizada do CPTu-02a", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_CPTu_02a.png", plot = combined_plot_u2_CPTu_02a)
+
+
+```
+```{r}
+dados_SCPTu_01 <- dados %>% filter(FURO == "SCPTu-01")
+
+dados_profundidade_u2 <- dados_SCPTu_01[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.08)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  ggtitle("SCPTu-01") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_SCPTu_01.png", plot = plot_u2_sobreposto)
+```
+```{r}
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(50, 550) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(50, 550) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_u2_SCPTu_01 <- grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Poropressão Original e Suavizada do SCPTu-01", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_SCPTu_01.png", plot = combined_plot_u2_SCPTu_01)
+
+```
+
+```{r}
+dados_SCPTu_02 <- dados %>% filter(FURO == "SCPTu-02")
+
+dados_profundidade_u2 <- dados_SCPTu_02[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.08)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  ggtitle("SCPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_SCPTu_02.png", plot = plot_u2_sobreposto)
+
+
+```
+```{r}
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 30) +
+  ylim(50, 800) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 30) +
+  ylim(50, 800) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_u2_SCPTu_02 <- grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Poropressão Original e Suavizada do SCPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_SCPTu_02.png", plot = combined_plot_u2_SCPTu_02)
+```
+```{r}
+dados_SCPTu_14 <- dados %>% filter(FURO == "SCPTu-14")
+
+dados_profundidade_u2 <- dados_SCPTu_14[c("PROF. (m)", "u2 (kPa)")]
+
+ts_u2 <- ts(dados_profundidade_u2$"u2 (kPa)", start = c(1,1), frequency = 1)
+
+ts_u2_es <- ets(ts_u2, alpha = 0.0124)
+
+dados_profundidade_u2$es_u2 <- ts_u2_es$fitted
+
+shapiro.test(dados_profundidade_u2$es_u2)
+
+plot_u2_sobreposto <-ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y =  `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_u2), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  ggtitle("SCPTu-14") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_u2_sobreposto
+
+ggsave(filename = "imagens/plot_u2_sobreposto_SCPTu_14.png", plot = plot_u2_sobreposto)
+
+```
+```{r}
+
+# Gráfico da poropressão original
+plot_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`,y = `u2 (kPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(10, 35) +
+  ylim(50, 1100) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+  
+# Gráfico da poropressão suavizada com Exponential Smoothing
+plot_es_u2 <- ggplot(data = dados_profundidade_u2, aes(x = `PROF. (m)`, y = es_u2)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(10, 35) +
+  ylim(50, 1100) +
+  scale_x_reverse() +
+  labs(x = "", y = "u2 (kPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+      axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_u2_SCPTu_14 <- grid.arrange(plot_u2, plot_es_u2, nrow = 1, top = textGrob("Poropressão Original e Suavizada do SCPTu-14", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_u2_SCPTu_14.png", plot = combined_plot_u2_SCPTu_14)
+
+
+```
+

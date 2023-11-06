@@ -1,0 +1,594 @@
+------------------------------------------------------------------------
+
+```{r}
+# Carregar pacotes e dados
+library(zoo)
+library(ggplot2)
+library(reshape2)
+library(readxl)
+library(RColorBrewer)
+library(dplyr)
+library(forecast)
+library(gridExtra)
+library(ggpubr)
+library(grid)
+#install.packages("cowplot")
+library(cowplot)
+
+setwd("C:/Banco_de_Dados")
+dados <- read_xlsx("TRATAMENTO_CPTU_TODOS.xlsx",sheet = "DADOS DE ENTRADA - CPTU",range = "B43:CH13022")
+
+```
+
+```{r}
+# Selecionar por furo
+dados_SCPTU_P4 <- dados %>% filter(FURO == "SCPTu-P4")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_SCPTU_P4[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto_SCPTu_P4 <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto_SCPTu_P4
+
+ggsave(filename = "imagens/plot_qc_sobreposto_SCPTu-P4.png", plot = plot_qc_sobreposto_SCPTu_P4)
+```
+
+```{r}
+# Gráfico da resistência original
+plot_qc_SCPTu_P4 <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(0, 18.5) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc_SCPTu_P4 <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 36.02) +
+  ylim(0, 18.5) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+grid.arrange(plot_qc_SCPTu_P4, plot_es_qc_SCPTu_P4, nrow = 1, top = textGrob("Comparação da Resistência Original e Suavizada", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Organize os gráficos em um único painel
+combined_plot_SCPTu_P4 <- plot_grid(plot_qc_SCPTu_P4, plot_es_qc, labels = c("Resistência Original", "Resistência Suavizada"), nrow = 1)
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_SCPTu-P4.png", plot = combined_plot_SCPTu_P4)
+```
+
+```{r}
+valor_regra_thumb <- 5  # Defina o valor desejado para a linha horizontal
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  geom_hline(yintercept = valor_regra_thumb, linetype = "dashed", color = "red") +  # Adiciona a linha horizontal
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto
+
+
+```
+
+```{r}
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_SCPTU_P4[c("PROF. (m)", "qt (MPa)")]  # Substituir "qc (MPa)" por "qt (MPa)"
+
+# Criar objeto ts
+ts_qt <- ts(dados_profundidade_resistencia$"qt (MPa)", start = c(1, 1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qt_es <- ets(ts_qt, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qt <- ts_qt_es$fitted 
+
+plot_qt_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qt (MPa)`)) +  # Substituir "qc (MPa)" por "qt (MPa)"
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qt), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qt (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qt_sobreposto
+
+
+```
+
+```{r}
+
+
+# Crie o gráfico com os valores de qt
+plot_qt_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qt (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qt), color = "orange", linewidth = 1.2, alpha = 0.8) +  # Mantenha "es_qc" para a suavização
+  geom_hline(yintercept = valor_regra_thumb, linetype = "dashed", color = "red") +  # Adiciona a linha horizontal
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qt (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qt_sobreposto
+
+
+
+```
+
+```{r}
+# Carregue a biblioteca ggplot2 para criar gráficos
+library(ggplot2)
+
+# Crie um vetor de resíduos subtraindo os valores suavizados dos valores observados
+residuos <- dados_profundidade_resistencia$"qc (MPa)" - dados_profundidade_resistencia$es_qc
+
+# Crie um gráfico de resíduos
+ggplot(data = NULL, aes(x = dados_profundidade_resistencia$"PROF. (m)", y = residuos)) +
+  geom_point() + 
+  geom_hline(yintercept = 0, linetype = "dashed", color = "red") +
+  labs(x = "Profundidade (m)", y = "Resíduos") +
+  ggtitle("Gráfico de Resíduos") +
+  theme_minimal()
+
+# Realize um teste de normalidade nos resíduos (teste Shapiro-Wilk)
+shapiro.test(residuos)
+
+# Calculando a correlação linear entre qc (suavizado) e outra variável (por exemplo, resistência)
+cor.test(dados_profundidade_resistencia$es_qc,dados_profundidade_fs$es_fs, method = "pearson")
+
+cor.test(dados_profundidade_resistencia$es_qc,dados_profundidade_fs$es_fs, method = "kendall")
+
+cor.test(dados_profundidade_resistencia$es_qc,dados_profundidade_fs$es_fs, method = "spearman")
+
+# Juntar as variáveis em um único dataframe
+dados_profundidade_regressao <- data.frame(es_qc = dados_profundidade_resistencia$es_qc,
+                                          es_fs = dados_profundidade_fs$es_fs)
+
+# Modelo de regressão linear
+modelo_regressao_qc <- lm(es_qc ~ es_fs, data = dados_profundidade_regressao)
+
+# Visualizar os resultados do modelo
+
+summary(modelo_regressao_qc)
+
+# Ajustar o modelo de regressão linear
+modelo_regressao_qc <- lm(es_qc ~ es_fs, data = dados_profundidade_regressao)
+
+# Extrair os coeficientes e o R² do modelo
+coeficientes <- coef(modelo_regressao_qc)
+r_squared <- summary(modelo_regressao_qc)$r.squared
+
+# Equação da regressão linear
+equacao <- paste("Equação da Regressão: y =", round(coeficientes[1], 2), "+", round(coeficientes[2], 2), "x")
+# R²
+r_squared_text <- paste("R² =", round(r_squared, 2))
+
+# Ajustar o modelo de regressão linear
+modelo_regressao_qc <- lm(es_qc ~ es_fs, data = dados_profundidade_regressao)
+
+# Extrair os coeficientes e o R² do modelo
+coeficientes <- coef(modelo_regressao_qc)
+r_squared <- summary(modelo_regressao_qc)$r.squared
+
+# Equação da regressão linear
+equacao <- paste("Equação da Regressão: y =", round(coeficientes[1], 2), "+", round(coeficientes[2], 2), "x")
+# R²
+r_squared_text <- paste("R² =", round(r_squared, 2))
+
+# Criar o gráfico
+library(ggplot2)
+ggplot(data = dados_profundidade_regressao, mapping = aes(x = es_fs, y = es_qc)) +
+  geom_point() +
+  geom_smooth(method = "lm", col = "red") +
+  geom_text(aes(x = max(dados_profundidade_regressao$es_fs), y = -0.2), label = paste(equacao, r_squared_text), hjust = 1, vjust = 0) +
+  theme_classic()
+
+
+
+
+
+
+
+
+
+
+```
+
+```{r}
+
+# Selecionar por furo
+dados_CPTU_02 <- dados %>% filter(FURO == "CPTu-02")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_CPTU_02[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)") +
+  ggtitle("CPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0))
+  )
+
+plot_qc_sobreposto
+
+ggsave(filename = "imagens/plot_qc_sobreposto_CPTu-02.png", plot = plot_qc_sobreposto)
+
+```
+
+```{r}
+# Gráfico da resistência original
+plot_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(0, 5) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 10) +
+  ylim(0, 5) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_CPTu_02 <- grid.arrange(plot_qc, plot_es_qc, nrow = 1, top = textGrob("Resistência Original e Suavizada do CPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_CPTu-02.png", plot = combined_plot_CPTu_02)
+```
+
+```{r}
+
+# Selecionar por furo
+dados_CPTU_02a <- dados %>% filter(FURO == "CPTu-02a")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_CPTU_02a[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  ggtitle("CPTu-02a") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto
+
+ggsave(filename = "imagens/plot_qc_sobreposto_CPTu-02a.png", plot = plot_qc_sobreposto)
+
+
+```
+```{r}
+
+# Gráfico da resistência original
+plot_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(0, 10) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(0, 20) +
+  ylim(0, 10) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_CPTu_02a <- grid.arrange(plot_qc, plot_es_qc, nrow = 1, top = textGrob("Resistência Original e Suavizada do CPTu-02a", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_CPTu-02a.png", plot = combined_plot_CPTu_02a)
+
+```
+
+
+
+
+```{r}
+
+
+# Selecionar por furo
+dados_SCPTU_01 <- dados %>% filter(FURO == "SCPTu-01")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_SCPTU_01[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  ggtitle("SCPTu-01") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto
+
+
+ggsave(filename = "imagens/plot_qc_sobreposto_SCPTu-01.png", plot = plot_qc_sobreposto)
+
+```
+```{r}
+
+# Gráfico da resistência original
+plot_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 2.5) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 20) +
+  ylim(0, 2.5) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_SCPTu_01 <- grid.arrange(plot_qc, plot_es_qc, nrow = 1, top = textGrob("Resistência Original e Suavizada do SCPTu-01", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_SCPTu_01.png", plot = combined_plot_SCPTu_01)
+
+
+```
+
+
+
+
+```{r}
+
+# Selecionar por furo
+dados_SCPTU_02 <- dados %>% filter(FURO == "SCPTu-02")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_SCPTU_02[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  ggtitle("SCPTu-02") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto
+
+ggsave(filename = "imagens/plot_qc_sobreposto_SCPTu-02.png", plot = plot_qc_sobreposto)
+
+```
+```{r}
+# Gráfico da resistência original
+plot_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 25) +
+  ylim(0, 2.5) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(12, 25) +
+  ylim(0, 2.5) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_SCPTu_02 <- grid.arrange(plot_qc, plot_es_qc, nrow = 1, top = textGrob("Resistência Original e Suavizada do SCPTu-02", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_SCPTu_02.png", plot = combined_plot_SCPTu_02)
+
+```
+
+
+
+```{r}
+# Selecionar por furo
+dados_SCPTU_14 <- dados %>% filter(FURO == "SCPTu-14")
+
+# Selecionar colunas de interesse
+dados_profundidade_resistencia <- dados_SCPTU_14[c("PROF. (m)", "qc (MPa)")] 
+
+# Criar objeto ts
+ts_qc <- ts(dados_profundidade_resistencia$"qc (MPa)", start = c(1,1), frequency = 1)
+
+# Aplicar Exponential Smoothing
+ts_qc_es <- ets(ts_qc, alpha = 0.06)
+
+# Extrair valores suavizados
+dados_profundidade_resistencia$es_qc <- ts_qc_es$fitted 
+
+shapiro.test(dados_profundidade_resistencia$es_qc)
+
+plot_qc_sobreposto <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  geom_line(aes(y = es_qc), color = "orange", linewidth = 1.2, alpha = 0.8) +
+  theme_classic() +
+  scale_x_reverse() +
+  coord_flip() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+  ggtitle("SCPTu-14") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+plot_qc_sobreposto
+
+ggsave(filename = "imagens/plot_qc_sobreposto_SCPTu-14.png", plot = plot_qc_sobreposto)
+
+
+```
+```{r}
+# Gráfico da resistência original
+plot_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = `qc (MPa)`)) +
+  geom_line(color = "steelblue") +
+  theme_classic() +
+  coord_flip() +
+  xlim(5, 40) +
+  ylim(0, 15) +
+  scale_x_reverse() +
+  labs(x = "Profundidade (m)", y = "qc (MPa)", title = "") +
+    theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Gráfico da resistência suavizada com Exponential Smoothing
+plot_es_qc <- ggplot(data = dados_profundidade_resistencia, aes(x = `PROF. (m)`, y = es_qc)) +
+  geom_line(color = "orange") +
+  theme_classic() +
+  coord_flip() +
+  xlim(5, 40) +
+  ylim(0, 15) +
+  scale_x_reverse() +
+  labs(x = "" ,y = "qc (MPa)", title = "") +
+  theme(plot.title = element_text(hjust = 0.5, size = 18, face = "bold"),
+        axis.title.y = element_text(margin = margin(t = 0, r = 8, b = 0, l = 0)))
+
+# Juntando os gráficos em um grid
+combined_plot_SCPTu_14 <- grid.arrange(plot_qc, plot_es_qc, nrow = 1, top = textGrob("Resistência Original e Suavizada do SCPTu-14", gp = gpar(fontsize = 15, fontface = "bold")))
+
+# Salve o painel combinado como uma imagem na pasta "imagens"
+ggsave(filename = "imagens/combined_plot_qc_SCPTu_14.png", plot = combined_plot_SCPTu_14)
+
+```
+
+
+
